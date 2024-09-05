@@ -48,7 +48,8 @@ const Footer = () => {
         </div>
         <div className="flex flex-row justify-between border-t-[1px] border-customBlueFour pt-11  max-sm:pt-6">
               <Link
-                href="/"
+                href="/https://drive.google.com/file/d/1SaRFtM6Ju29GN-TPSsuWAKxKtUuepSwg/view?usp=sharing"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-[14px] leading-[16.8px] text-customBlackOne max-sm:text-[16px] max-sm:leading-[19.2px]"
               >

@@ -34,11 +34,11 @@ export default function Home() {
 
     return (
         <>
-        {/*<Header handleClickButton={handleClickButton}/>*/}
+        <Header handleClickButton={handleClickButton}/>
         <main className="min-w-80">
-            {/*<TradingStrategy ref={refs.tradingStrategy} isActive={isActive} formSubmitted={formSubmitted} setFormSubmitted={setFormSubmitted}*/}
-            {/*         setIsActive={setIsActive}/>*/}
-            {/*<Strategy ref={refs.strategy}/>*/}
+            <TradingStrategy ref={refs.tradingStrategy} isActive={isActive} formSubmitted={formSubmitted} setFormSubmitted={setFormSubmitted}
+                     setIsActive={setIsActive}/>
+            <Strategy ref={refs.strategy}/>
             <BookContentsSection ref={refs.book} handleClickButton={handleClickButton}/>
             <WhyTradersLoseSection ref={refs.reasonsFailure}/>
             <PromoSection handleClickButton={handleClickButton}/>

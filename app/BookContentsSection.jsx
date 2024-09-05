@@ -27,7 +27,8 @@ const BookContentsSection = ({ref, handleClickButton}) => {
                         <div className="flex flex-col">
                             <h2 className="text-[40px] font-medium leading-[48px] text-customBlackOne max-sm:text-[20px] max-sm:leading-[24px] max-sm:font-semibold">What's inside the
                                 strategy tutorial book?</h2>
-                            <Image src="/line.png" alt="line" width={800} height={48} className="object-contain"/>
+                            <Image src="/line2.png" alt="line" width={227} height={48} className="object-contain hidden max-sm:inline-block"/>
+                            <Image src="/line.png" alt="line" width={800} height={48} className="object-contain max-sm:hidden"/>
                             <div className="flex flex-row gap-0.5 relative ml-10 max-sm:gap-4 max-sm:ml-0">
                                 <div
                                     className="w-10 h-10 bg-customGreySeventeen rounded-[100px] flex items-center justify-center max-sm:bg-transparent">
