@@ -83,6 +83,13 @@
     margin-right: 2px !important;
 }
 
+.bg-custom-gradient-four {
+    background: linear-gradient(180.23deg, #FAFAFB 52.25%, rgba(255, 255, 255, 0) 99.8%);
+}
+.flip-horizontal {
+    @apply transform;
+    transform: scale(-1, 1);
+}
 
 @layer base {
     :root {

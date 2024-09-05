@@ -5,11 +5,11 @@ export const validateName = (name) => {
     if (name.length < 1) {
         return 'Name is required';
     } else if (name.length < 2) {
-        return 'Name must be at least 2 characters long';
+        return 'Minimum length is 2 characters';
     } else if (name.length > 50) {
         return 'The name must contain no more than 50 characters.';
     } else if (!namePattern.test(name)) {
-        return 'Only letters, spaces, dashes and apostrophes.';
+        return 'Maximum length is 50 characters';
     } else {
         return '';
     }
@@ -20,9 +20,9 @@ export const validateEmail = (email) => {
     if (!email) {
         return 'Email is required';
     } else if (email.length < 4) {
-        return 'Email is too short. Minimum length is 4 characters';
+        return 'Minimum length is 4 characters';
     } else if (email.length > 50) {
-        return 'Email is too long. Maximum length is 50 characters';
+        return 'Maximum length is 50 characters';
     } else if (!emailPattern.test(email)) {
         return 'Invalid email address';
     } else {
