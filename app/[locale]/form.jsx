@@ -4,7 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Image from "next/image";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+// import { isValidPhoneNumber } from "react-phone-number-input";
 import {
   validateName,
   validateEmail,
@@ -15,8 +16,26 @@ import {
   checkEmailExists,
   checkPhoneExists,
 } from "../../lib/supabaseClient";
+import { useTranslation } from "react-i18next";
+import { useLandingContext } from "./context/context";
+import { CgSpinner } from "react-icons/cg";
 
-const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
+// import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const Form = ({
+  // setFormSubmitted,
+  // setIsActive,
+  // formSubmitted,
+  // isActive,
+  locale,
+  onFormSubmit,
+  sectionId,
+}) => {
+  const { t } = useTranslation();
+
+  // const [formSubmitted, setFormSubmitted] = useState(false);
+
   const [inputValueName, setInputValueName] = useState("");
   const [inputValueEmail, setInputValueEmail] = useState("");
   const [inputValuePhone, setInputValuePhone] = useState("");
@@ -25,6 +44,26 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
   const [phoneError, setPhoneError] = useState("");
   const [checkboxChecked, setCheckboxChecked] = useState(false);
   const [checkboxError, setCheckboxError] = useState("");
+  const [defaultCountry, setDefaultCountry] = useState("US");
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const { formSubmitted, setFormSubmitted, setSectionID } = useLandingContext();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCountry = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
+        console.log(data, "data");
+        setDefaultCountry(data.country_code);
+      } catch (error) {
+        console.error("Error fetching country code:", error);
+      }
+    };
+    fetchCountry();
+  }, []); // Empty dependency array to run the effect only once
+
   const handleChange = (eventOrValue, name) => {
     if (name === "telephone") {
       setInputValuePhone(eventOrValue);
@@ -67,81 +106,227 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
     }
   };
 
+  function redirectToWebsite() {
+    openBook();
+    setTimeout(() => {
+      window.location.href = "https://www.artsmrkts.com";
+    }, 6000);
+  }
+
+  const openBook = () => {
+    const arabicBook =
+      "https://drive.google.com/file/d/1Xu-wy93tCthtCvLMjNuAvkyUchqCYdPT/view";
+    const englishBook =
+      "https://drive.google.com/file/d/1yAAv5IofSiNheaDVG1ZLSRNC8BhZ7fZ1/view?usp=sharing";
+
+    const bookLink = locale === "ar" ? arabicBook : englishBook;
+    window.open(bookLink, "_blank");
+  };
+
+  // const [isPhoneValid, setIsPhoneValid] = useState(inputValuePhone);
+
   const handleSubmit = async (event) => {
+    // const validPhone = isValidPhoneNumber(inputValuePhone);
+    // console.log("validPhone", validPhone);
+    // setIsPhoneValid(validPhone);
+
+    setLoading(true);
+    console.log("see me here");
     event.preventDefault();
     setNameError(validateName(inputValueName));
     setEmailError(validateEmail(inputValueEmail));
     setPhoneError(validatePhone(inputValuePhone));
+
+    // if (isPhoneValid) {
+    //   setPhoneError("");
+    // } else if (!isPhoneValid) {
+    //   setPhoneError("Invalid phone number");
+    //   setPhoneError(validatePhone(inputValuePhone));
+    //   setLoading(false);
+    // }
 
     if (!nameError && !emailError && !phoneError && checkboxChecked) {
       try {
         const emailExists = await checkEmailExists(inputValueEmail);
         if (emailExists) {
           setEmailError("This email is already in use.");
+          setLoading(false);
           return;
         }
 
         const phoneExists = await checkPhoneExists(inputValuePhone);
         if (phoneExists) {
           setPhoneError("This phone number is already in use.");
+          setLoading(false);
           return;
         }
 
-        await addContactWithBook(
-          inputValueName,
-          inputValueEmail,
-          inputValuePhone
-        );
-        setInputValueName("");
-        setInputValueEmail("");
-        setInputValuePhone("");
-        setNameError("");
-        setEmailError("");
-        setPhoneError("");
-        setCheckboxError("");
-        debugger
-        setCheckboxChecked(false);
-        setIsActive(true);
-        setFormSubmitted(true);
+        const formData = {
+          name: inputValueName,
+          email: inputValueEmail,
+          phone_number: inputValuePhone,
+          locale: locale,
+        };
+
+        try {
+          const response = await fetch("/api/sendMessage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          });
+          console.log(formData, "formData");
+          if (response.ok) {
+            // Handle success (e.g., display a success message)
+            // Scroll to the form section
+            document
+              .querySelector(sectionId)
+              .scrollIntoView({ behavior: "smooth" });
+          } else {
+            alert("Email or phone number already exists");
+            setEmailError(true);
+            setPhoneError(true);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error("An error occurred:", error);
+        }
+
+        if (!emailError) {
+          setLoading(false);
+          console.log("emailError", emailError);
+          setInputValueName("");
+          setInputValueEmail("");
+          setInputValuePhone("");
+          setNameError("");
+          setEmailError("");
+          setPhoneError("");
+          setCheckboxChecked(false);
+          setFormSubmitted(true);
+          trackFormSubmit();
+          setSectionID(sectionId);
+        }
+
+        try {
+          const response = await fetch("/api/bot", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          });
+          console.log(formData, "formData");
+        } catch (error) {
+          console.error("An error occurred:", error);
+        }
+
+        try {
+          const response = await fetch("/api/send-email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          });
+          console.log(formData, "formData");
+          if (response.ok && sectionId === "bookGet") {
+            // Handle success (e.g., display a success message)
+            // Scroll to the form section
+            document
+              .querySelector("bookGet")
+              .scrollIntoView({ behavior: "smooth" });
+          } else {
+            // Handle error (e.g., display an error message)
+          }
+        } catch (error) {
+          console.error("An error occurred:", error);
+        }
+
+        console.log(formSubmitted, "is form submitted?");
       } catch (error) {
         console.error("Error adding contact:", error);
       }
     } else if (!checkboxChecked) {
       setCheckboxError("You must agree to the processing of personal data.");
+    } else {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Ensure the ym function is available
+    if (typeof ym === "undefined") {
+      console.error("Yandex.Metrika is not loaded");
+    } else {
+      // Track the form view event
+      ym(98279723, "reachGoal", "form-view");
+    }
+  }, [window.ym]);
+
+  const trackFormSubmit = () => {
+    // Ensure the ym function is available
+    if (typeof ym === "undefined") {
+      console.error("Yandex.Metrika is not loaded");
+    } else {
+      // Track the form submission event
+      ym(98279723, "reachGoal", "form");
     }
   };
 
   return (
-    <form
-      className="flex flex-col gap-2 relative z-20"
-      name="form-call"
-      onSubmit={handleSubmit}
-    >
+    <form className="flex flex-col gap-2 relative z-20" name="form-call">
       {formSubmitted && (
-        <div className="flex flex-col py-[35px] px-[61.5px] mx-auto items-center box-shadow-two rounded-2xl mb-7 relative bg-white max-sm:py-8 max-sm:px-[18px] max-[358px]:px-[0px]">
-          <div className="flex h-[60px] w-[60px] cursor-pointer items-center justify-center rounded-[100px] bg-customGreenOne">
+        <div>
+          {" "}
+          <button
+            disabled={loading}
+            type="submit"
+            className={`${"bg-customOrangeTwo z-50 mb-6  duration-300 w-full ease-in-out hover:bg-customOrange active:bg-customOrangeThree"} flex cursor-pointer items-center gap-2 justify-center rounded-[44px] px-[44px] py-3`}
+            onClick={redirectToWebsite}
+          >
+            {loading && (
+              <CgSpinner className="animate-spin text-2xl sm:text-3xl text-white" />
+            )}
+            <span className="text-[20px] font-semibold leading-[24px] text-white max-sm:text-[16px] max-sm:leading-[19.2px] whitespace-nowrap">
+              {t("Get the book")}
+            </span>
             <Image
-              src="arrow7.svg"
-              alt="call"
-              width={18}
-              height={15}
-              className="object-contain "
+              src="/arrowWhite.svg"
+              alt="arrow"
+              width={34}
+              height={3}
+              style={{ transform: locale === "ar" ? "rotate(180deg)" : "none" }}
             />
-          </div>
-          <p className="text-center text-[16px] leading-[19.2px] text-customBlackOne pt-4 pb-6">
-            We have already sent the book to your email address! You can also
-            open a free demo account and and start trading right now!
-          </p>
-          <Link href="/" className="relative z-20 flex-1">
-            <button
-              type="button"
-              className="flex cursor-pointer flex-row items-center justify-center rounded-[44px] border-[1px] border-customGrey bg-white px-11 py-3 transition-colors duration-300 ease-in-out hover:bg-customGreyTwo active:bg-customGrey"
+          </button>
+          <div className="flex flex-col py-[35px] px-[61.5px] mx-auto items-center box-shadow-two rounded-2xl mb-7 relative bg-white max-sm:py-8 max-sm:px-[18px] max-[358px]:px-[0px]">
+            <div className="flex h-[60px] w-[60px] cursor-pointer items-center justify-center rounded-[100px] bg-customGreenOne">
+              <Image
+                src="arrow7.svg"
+                alt="call"
+                width={18}
+                height={15}
+                className="object-contain "
+              />
+            </div>
+            <p className="text-center text-[16px] leading-[19.2px] text-customBlackOne pt-4 pb-6">
+              {t("we have already")}
+            </p>
+            <Link
+              href="https://www.artsmrkts.com"
+              className="relative z-20 flex-1"
             >
-              <span className="text-[20px] font-semibold leading-[24px] text-customOrangeFive whitespace-nowrap max-[358px]:text-[16px] max-[358px]:leading-[19.2px]">
-                Open demo account
-              </span>
-            </button>
-          </Link>
+              <button
+                type="button"
+                className="flex cursor-pointer flex-row items-center justify-center rounded-[44px] border-[1px] border-customGrey bg-white px-11 py-3 transition-colors duration-300 ease-in-out hover:bg-customGreyTwo active:bg-customGrey"
+              >
+                <span className="text-[20px] font-semibold leading-[24px] text-customOrangeFive whitespace-nowrap max-[358px]:text-[16px] max-[358px]:leading-[19.2px]">
+                  {t("Open demo account")}
+                </span>
+              </button>
+            </Link>
+          </div>
         </div>
       )}
       {!formSubmitted && (
@@ -151,7 +336,7 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
               htmlFor="name"
               className="text-[14px] leading-[16.8px] text-customGreyEleven"
             >
-              Name
+              {t("Name")}
             </label>
             <div className="relative flex flex-row">
               <input
@@ -159,8 +344,8 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
                 type="text"
                 name="name"
                 id="name"
-                placeholder="Jack Jackson"
-                className={`w-full bg-white border-[1px] border-solid  rounded-xl pl-4 pr-12 py-[18.5px] text-[16px] leading-[19.2px] text-customBlue placeholder-customGreyThirteen outline-none  ${
+                placeholder={t("Jack Jackson")}
+                className={`w-full bg-white border-[1px] border-solid  rounded-xl ltr:pl-4 rtl:pr-4 ltr:pr-12 rtl:pl-12 py-[18.5px] text-[16px] leading-[19.2px] text-customBlue placeholder-customGreyThirteen outline-none  ${
                   nameError
                     ? "shadow-md border-customOrangeTwo"
                     : "shadow-none border-customGreyTwelve focus:border-customBlueSix"
@@ -192,7 +377,7 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
               htmlFor="email"
               className="text-[14px] leading-[16.8px] text-customGreyEleven"
             >
-              E-mail
+              {t("E-mail")}
             </label>
             <div className="relative flex flex-row">
               <input
@@ -200,8 +385,8 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
                 type="email"
                 name="email"
                 id="email"
-                placeholder="example@example.com"
-                className={`w-full bg-white border-[1px] border-solid  rounded-xl pl-4 pr-12 py-[18.5px] text-[16px] leading-[19.2px] text-customBlue placeholder-customGreyThirteen outline-none  ${
+                placeholder={t("example@example.com")}
+                className={`w-full bg-white border-[1px] border-solid  rounded-xl ltr:pl-4 rtl:pr-4 ltr:pr-12 rtl:pl-12 py-[18.5px] text-[16px] leading-[19.2px] text-customBlue placeholder-customGreyThirteen outline-none  ${
                   emailError
                     ? "shadow-md border-customOrangeTwo"
                     : "shadow-none border-customGreyTwelve focus:border-customBlueSix"
@@ -233,7 +418,7 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
               htmlFor="telephone"
               className="text-[14px] leading-[16.8px] text-customGreyEleven"
             >
-              Phone number
+              {t("Phone number")}
             </label>
             <div
               className={`h-[56px] relative flex flex-row px-2 py-1.5 border-[1px] border-solid rounded-xl bg-white ${
@@ -244,7 +429,7 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
             >
               <PhoneInput
                 international
-                defaultCountry="US"
+                defaultCountry={defaultCountry}
                 type="telephone"
                 name="telephone"
                 id="telephone"
@@ -264,13 +449,46 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
                 id="terms1"
                 checked={checkboxChecked}
                 onCheckedChange={handleCheckboxChange}
+                className="rtl:ml-2"
               />
               <div className="grid gap-1.5 leading-none">
                 <label
                   htmlFor="terms1"
                   className="text-[16px] leading-[19.2px] text-customBlackSix leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-80"
                 >
-                  By submitting you confirm that you’ve read and accepted the <Link href="https://drive.google.com/file/d/1SaRFtM6Ju29GN-TPSsuWAKxKtUuepSwg/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-customOrange hover:text-customRedText">Privacy Policy</Link> and <Link href="https://drive.google.com/file/d/1rwdaSoEfJeYzZMUlGKo59BoE1Kgbviri/view?pli=1" target="_blank" rel="noopener noreferrer" className="text-customOrange hover:text-customRedText">Terms of conditions.</Link>
+                  {t(
+                    "I agree to the processing of personal data in accordance with the"
+                  )}
+                  <Link
+                    href="https://drive.google.com/file/d/1SaRFtM6Ju29GN-TPSsuWAKxKtUuepSwg/view?usp=sharing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="text-customRedText underline">
+                      {" "}
+                      {t("Privacy Policy form")}
+                    </span>{" "}
+                  </Link>
+                  {/* <span className="rtl:hidden">and</span> */}
+                  <span>{t("and")}</span>
+                  <Link
+                    href="https://drive.google.com/file/d/1rwdaSoEfJeYzZMUlGKo59BoE1Kgbviri/view?usp=sharing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {" "}
+                    <span className="text-customRedText underline">
+                      {t("Terms and Conditions")}
+                    </span>
+                  </Link>
+                  <a
+                    href="https://drive.google.com/file/d/1SaRFtM6Ju29GN-TPSsuWAKxKtUuepSwg/view"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-customRedText active:bg-customOrangeFour"
+                  >
+                    {/* {t("Privacy Policy")} */}
+                  </a>
                 </label>
               </div>
             </div>
@@ -280,20 +498,28 @@ const Form = ({ setFormSubmitted, setIsActive, formSubmitted, isActive }) => {
           </div>
         </div>
       )}
-      <button
-        disabled={isActive}
-        type="submit"
-        className={`${
-          isActive
-            ? "bg-customOrangeFour"
-            : "bg-customOrangeTwo transition-colors duration-300 ease-in-out hover:bg-customOrange active:bg-customOrangeThree"
-        } flex cursor-pointer items-center gap-2 justify-center rounded-[44px] px-[44px] py-3`}
-      >
-        <span className="text-[20px] font-semibold leading-[24px] text-white max-sm:text-[16px] max-sm:leading-[19.2px] whitespace-nowrap">
-          Get the book
-        </span>
-        <Image src="/arrowWhite.svg" alt="arrow" width={34} height={3} />
-      </button>
+      {!formSubmitted && (
+        <button
+          type="submit"
+          disabled={loading}
+          className={`${"bg-customOrangeTwo transition-colors duration-300 ease-in-out hover:bg-customOrange active:bg-customOrangeThree"} flex cursor-pointer items-center gap-2 justify-center rounded-[44px] px-[44px] py-3`}
+          onClick={handleSubmit}
+        >
+          {loading && (
+            <CgSpinner className="animate-spin text-2xl sm:text-3xl text-white" />
+          )}
+          <span className="text-[20px] font-semibold leading-[24px] text-white max-sm:text-[16px] max-sm:leading-[19.2px] whitespace-nowrap">
+            {t("Get the book")}
+          </span>
+          <Image
+            src="/arrowWhite.svg"
+            alt="arrow"
+            width={34}
+            height={3}
+            style={{ transform: locale === "ar" ? "rotate(180deg)" : "none" }}
+          />
+        </button>
+      )}
     </form>
   );
 };
